@@ -17,6 +17,9 @@ importers:
       '@goat-sdk/core':
         specifier: 0.4.9
         version: 0.4.9(zod@3.23.8)
+      '@goat-sdk/plugin-1inch':
+        specifier: ^0.1.9
+        version: 0.1.9(@goat-sdk/core@0.4.9(zod@3.23.8))(@goat-sdk/wallet-evm@0.2.11(@goat-sdk/core@0.4.9(zod@3.23.8))(typescript@5.8.3))
       '@goat-sdk/plugin-coingecko':
         specifier: 0.2.10
         version: 0.2.10(@goat-sdk/core@0.4.9(zod@3.23.8))
@@ -127,6 +130,12 @@ packages:
     resolution: {integrity: sha512-Z152kNW/iTd89t2Z59+rTGlr/XGZ0eSDzXFu8jEZfwKrr2p6AZ5JWNAe0RrVc1LcZLsXU1oGxjGytxKGyXMB7Q==}
     peerDependencies:
       zod: ^3.0.0
+
+  '@goat-sdk/plugin-1inch@0.1.9':
+    resolution: {integrity: sha512-LS6xUsvpbGCiClDG2WgjJY8zKzN95pZaUPGxdtvfArNDM3MSVMpoLppiPLFsta4LRgODm83GP0ljJQyPcwr9FQ==}
+    peerDependencies:
+      '@goat-sdk/core': 0.4.9
+      '@goat-sdk/wallet-evm': 0.2.11
 
   '@goat-sdk/plugin-coingecko@0.2.10':
     resolution: {integrity: sha512-RCcFUXTuw2R6wKUvRt916XjaEPG5QhP8o49joncA7mqJY2LZ6EWdWFze7gLlNJZHnPggbv9QOoG8LsPYLDjUGg==}
@@ -730,6 +739,12 @@ snapshots:
   '@goat-sdk/core@0.4.9(zod@3.23.8)':
     dependencies:
       reflect-metadata: 0.2.2
+      zod: 3.23.8
+
+  '@goat-sdk/plugin-1inch@0.1.9(@goat-sdk/core@0.4.9(zod@3.23.8))(@goat-sdk/wallet-evm@0.2.11(@goat-sdk/core@0.4.9(zod@3.23.8))(typescript@5.8.3))':
+    dependencies:
+      '@goat-sdk/core': 0.4.9(zod@3.23.8)
+      '@goat-sdk/wallet-evm': 0.2.11(@goat-sdk/core@0.4.9(zod@3.23.8))(typescript@5.8.3)
       zod: 3.23.8
 
   '@goat-sdk/plugin-coingecko@0.2.10(@goat-sdk/core@0.4.9(zod@3.23.8))':

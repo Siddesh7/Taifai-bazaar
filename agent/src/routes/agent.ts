@@ -10,6 +10,7 @@ import { PEPE, USDC, erc20 } from "@goat-sdk/plugin-erc20";
 import { sendETH } from "@goat-sdk/wallet-evm";
 import { viem } from "@goat-sdk/wallet-viem";
 import { coingecko } from "@goat-sdk/plugin-coingecko";
+import { oneInch } from "@goat-sdk/plugin-1inch";
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -52,11 +53,15 @@ router.post(
       // Get on-chain tools
       const tools = await getOnChainTools({
         wallet: viem(walletClient),
+
         plugins: [
           sendETH(),
           erc20({ tokens: [USDC, PEPE] }),
           coingecko({
             apiKey: process.env.COINGECKO_API_KEY as string,
+          }),
+          oneInch({
+            apiKey: process.env.ONEINCH_API_KEY as string, // Get it from: https://portal.1inch.dev
           }),
         ],
       });

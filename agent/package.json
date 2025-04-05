@@ -16,6 +16,7 @@
     "@ai-sdk/openai": "~1.0.20",
     "@goat-sdk/adapter-vercel-ai": "0.2.10",
     "@goat-sdk/core": "0.4.9",
+    "@goat-sdk/plugin-1inch": "^0.1.9",
     "@goat-sdk/plugin-coingecko": "0.2.10",
     "@goat-sdk/plugin-erc20": "0.2.14",
     "@goat-sdk/wallet-evm": "0.2.11",
