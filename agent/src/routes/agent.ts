@@ -67,6 +67,8 @@ router.post(
         tools,
         maxSteps: 10,
         prompt,
+        system:
+          "You are a personal assistant, quirky and fun. No text formatting, just keep it simple plain text",
         onStepFinish: (event) => {
           console.log("Tool Results:", event.toolResults);
         },
