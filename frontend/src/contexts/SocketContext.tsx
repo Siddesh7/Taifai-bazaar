@@ -206,6 +206,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       socket.off("player_renamed");
       socket.off("player_left");
       socket.off("room_error");
+      socket.off("agent_response");
     };
   }, [socket]);
 

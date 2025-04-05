@@ -136,6 +136,19 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Handle agent responses to broadcast to the room
+  socket.on("agent_response", ({ roomCode, agentText, stallId }) => {
+    if (rooms[roomCode]) {
+      // Broadcast the agent response to all other users in the room
+      socket.to(roomCode).emit("agent_response", {
+        roomCode,
+        agentText,
+        stallId,
+      });
+      console.log(`Broadcasting agent response in room: ${roomCode}`);
+    }
+  });
+
   // Handle leaving room
   socket.on("leave_room", ({ roomCode }) => {
     leaveRoom(socket, roomCode);

@@ -22,6 +22,13 @@ import ArenaStyles from "./components/ArenaStyles";
 // Import types
 import SpeechRecognition from "./types/speechRecognition";
 
+// Add agent response interface
+interface AgentResponseData {
+  roomCode: string;
+  agentText: string;
+  stallId: number | null;
+}
+
 export default function Arena() {
   const [position, setPosition] = useState({ x: 600, y: 300 });
   const [showControls, setShowControls] = useState(true);
@@ -279,7 +286,18 @@ export default function Arena() {
       );
       const agentText = response.data.response;
       setAgentResponse(agentText);
+
+      // Generate and play audio locally
       await generateElevenLabsTTS(agentText);
+
+      // Broadcast agent response to all users in the room
+      if (socket && isConnected && roomCode) {
+        socket.emit("agent_response", {
+          roomCode,
+          agentText,
+          stallId: activeTile,
+        });
+      }
     } catch (err) {
       setError(`Agent error: ${(err as Error).message || "Unknown error"}`);
     } finally {
@@ -598,6 +616,23 @@ export default function Arena() {
       socket.emit("player_name", { roomCode, username });
     }
   }, [username, socket, isConnected, roomCode]);
+
+  // Add socket listener for agent responses from other users
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for agent responses from other users
+      socket.on("agent_response", async (data: AgentResponseData) => {
+        if (data.agentText) {
+          setAgentResponse(data.agentText);
+          await generateElevenLabsTTS(data.agentText);
+        }
+      });
+
+      return () => {
+        socket.off("agent_response");
+      };
+    }
+  }, [socket, isConnected]);
 
   return (
     <main className="relative w-full h-screen overflow-hidden bg-blue-950">
