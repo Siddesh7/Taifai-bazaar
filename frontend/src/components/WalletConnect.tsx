@@ -12,7 +12,7 @@ interface WalletConnectProps {
 
 export function WalletConnect({ className, onConnectionChange }: WalletConnectProps) {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { ready, authenticated, login, logout } = usePrivy();
   const { address, isConnected } = useAccount();
   const { connectAsync, connectors } = useConnect();
   const { disconnectAsync } = useDisconnect();

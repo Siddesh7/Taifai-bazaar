@@ -109,8 +109,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Room created with code:", roomCode);
       setRoomCode(roomCode);
       setPlayers({
-        [socket.id]: {
-          id: socket.id,
+        [socket.id as string]: {
+          id: socket.id as string,
           position: { x: 600, y: 300 },
           username: "Guest",
           emote: null,

@@ -9,8 +9,6 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const privy_app_id = process.env.NEXT_PUBLIC_PRIVY_APP_ID || "";
-
 export const metadata: Metadata = {
   title: "Taifei Bazaar",
   description: "A night market metaverse for frens",
