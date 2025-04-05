@@ -1,35 +1,36 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClientProviders } from "@/components/ClientProviders";
+import { Inter } from "next/font/google";
+import type { Metadata } from "next";
+import { SocketProvider } from '../contexts/SocketContext';
 
-const geistSans = Geist({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-inter",
 });
 
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-});
+const privy_app_id = process.env.NEXT_PUBLIC_PRIVY_APP_ID || "";
 
 export const metadata: Metadata = {
   title: "Taifei Bazaar",
-  description: "A Taiwanese night market for DeFi",
+  description: "A night market metaverse for frens",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
+      <head></head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} antialiased`}
       >
         <ClientProviders>
-          {children}
+          <SocketProvider>
+            {children}
+          </SocketProvider>
         </ClientProviders>
       </body>
     </html>

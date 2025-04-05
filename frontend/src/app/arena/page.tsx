@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
+import { useSocket, PlayerData } from "../../contexts/SocketContext";
 
 export default function Arena() {
   const [position, setPosition] = useState({ x: 600, y: 300 });
@@ -13,8 +14,23 @@ export default function Arena() {
   const [username, setUsername] = useState("Guest");
   const [showNameInput, setShowNameInput] = useState(false);
   const [viewportSize, setViewportSize] = useState({ width: 1200, height: 600 });
+  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [isJoiningTeam, setIsJoiningTeam] = useState(false);
+  const [joinTeamInput, setJoinTeamInput] = useState("");
   const router = useRouter();
   const { user, authenticated } = usePrivy();
+  
+  // Get socket context
+  const { 
+    socket,
+    isConnected,
+    createRoom,
+    joinRoom,
+    leaveRoom,
+    roomCode,
+    players,
+    error 
+  } = useSocket();
   
   // Get wallet address
   const walletAddress = user?.wallet?.address || "";
@@ -320,6 +336,75 @@ export default function Arena() {
 
   const emotes = ["👋", "👍", "❤️", "😂", "🎉", "🤔", "👀", "🙏"];
 
+  // Generate random alphanumeric code - now using socket server
+  const generateTeamCode = () => {
+    createRoom();
+  };
+
+  // Handle create team button click
+  const handleCreateTeam = () => {
+    setIsCreatingTeam(true);
+    setIsJoiningTeam(false);
+    generateTeamCode();
+  };
+
+  // Handle join team button click
+  const handleJoinTeam = () => {
+    setIsJoiningTeam(true);
+    setIsCreatingTeam(false);
+  };
+
+  // Handle join team submit
+  const handleJoinTeamSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    joinRoom(joinTeamInput);
+    setIsJoiningTeam(false);
+  };
+
+  // Close team modals
+  const closeTeamModals = () => {
+    setIsCreatingTeam(false);
+    setIsJoiningTeam(false);
+  };
+
+  // Leave room handler
+  const handleLeaveRoom = () => {
+    if (roomCode) {
+      leaveRoom(roomCode);
+    }
+    setJoinTeamInput("");
+  };
+
+  // Send position updates to server
+  useEffect(() => {
+    if (socket && isConnected && roomCode) {
+      socket.emit('player_move', {
+        roomCode,
+        position
+      });
+    }
+  }, [position, socket, isConnected, roomCode]);
+
+  // Send emote updates to server
+  useEffect(() => {
+    if (socket && isConnected && roomCode && currentEmote) {
+      socket.emit('player_emote', {
+        roomCode,
+        emote: currentEmote
+      });
+    }
+  }, [currentEmote, socket, isConnected, roomCode]);
+
+  // Send username updates to server
+  useEffect(() => {
+    if (socket && isConnected && roomCode && username) {
+      socket.emit('player_name', {
+        roomCode,
+        username
+      });
+    }
+  }, [username, socket, isConnected, roomCode]);
+
   return (
     <main className="relative w-full h-screen overflow-hidden bg-blue-950">
       {/* Top nav bar with back button */}
@@ -330,7 +415,21 @@ export default function Arena() {
         >
           ← Home
         </button>
-        <h1 className="text-2xl font-bold text-yellow-300 font-['Press_Start_2P',_monospace] tracking-tight">臺北夜市 - Taifei Bazaar</h1>
+
+        <div className="flex flex-col items-center">
+          <h1 className="text-2xl font-bold tracking-wide flex items-center space-x-2">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-300 to-red-500 animate-pulse-slow" 
+                  style={{ textShadow: "0 0 10px rgba(255, 0, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.3)", fontFamily: "'Press_Start_2P', monospace" }}>
+              臺北夜市
+            </span>
+            <span className="text-white opacity-70 mx-1 text-xl">|</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-400" 
+                  style={{ textShadow: "0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(14, 165, 233, 0.3)", fontFamily: "'Press_Start_2P', monospace" }}>
+              Taifei Bazaar
+            </span>
+          </h1>
+        </div>
+
         <div className="px-3 py-1 bg-green-600 text-white rounded-md text-sm flex items-center">
           <div className="w-2 h-2 bg-green-300 rounded-full mr-2 animate-pulse"></div>
           {formattedAddress ? (
@@ -340,6 +439,202 @@ export default function Arena() {
           ) : "Wallet Connected"}
         </div>
       </div>
+      
+      {/* Room code display */}
+      {roomCode && (
+        <div className="absolute top-16 left-4 z-40 flex items-center">
+          <div className="flex items-center bg-gray-800 bg-opacity-90 px-3 py-2 rounded-md border border-gray-700">
+            <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+            <span className="text-white text-sm font-pixel mr-2">Room:</span>
+            <span className="font-mono font-bold text-yellow-400">{roomCode}</span>
+          </div>
+          <button
+            onClick={handleLeaveRoom}
+            className="ml-2 px-3 py-2 bg-red-700 hover:bg-red-600 text-white text-sm font-pixel rounded-md flex items-center transition-colors border border-red-900"
+            style={{ textShadow: "0 0 2px rgba(0,0,0,0.8)" }}
+          >
+            <span className="mr-1.5">🚪</span>
+            Leave Room
+          </button>
+        </div>
+      )}
+      
+      {/* Multiplayer buttons */}
+      {!roomCode && (
+        <div className="absolute top-20 left-0 w-full flex flex-col items-center z-40">
+          {!isConnected && (
+            <div className="bg-red-900 bg-opacity-90 px-4 py-2 rounded-md mb-4 flex items-center">
+              <div className="w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></div>
+              <span className="text-white text-sm">Socket connection unavailable. Please check the server.</span>
+            </div>
+          )}
+          
+          {error && (
+            <div className="bg-red-900 bg-opacity-90 px-4 py-2 rounded-md mb-4">
+              <span className="text-white text-sm">{error}</span>
+            </div>
+          )}
+          
+          <div className="flex justify-center items-center space-x-12">
+            <button 
+              onClick={handleCreateTeam}
+              className="p-2 rounded relative group"
+              disabled={!isConnected}
+              style={{ 
+                imageRendering: "pixelated",
+                boxShadow: "0 0 10px rgba(246, 173, 85, 0.5)",
+                opacity: isConnected ? 1 : 0.5,
+                cursor: isConnected ? 'pointer' : 'not-allowed'
+              }}
+            >
+              <div className="absolute inset-0 bg-orange-600 rounded transform rotate-1 -z-10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-orange-700 rounded"></div>
+              <div className="absolute inset-2 bg-orange-600 border-t-2 border-l-2 border-orange-400 border-b-2 border-r-2 border-orange-800 rounded-sm"></div>
+              <div className="relative z-10 font-pixel text-white text-base font-bold px-3 py-1.5 flex items-center">
+                <span className="mr-1.5 text-xl">🏮</span>
+                <span>Create a Room</span>
+              </div>
+              <div className="absolute -inset-px bg-white opacity-0 group-hover:opacity-20 rounded transition-opacity"></div>
+              <div className="absolute inset-0 border-2 border-dashed border-orange-300 opacity-0 group-hover:opacity-40 rounded"></div>
+            </button>
+            
+            <button 
+              onClick={handleJoinTeam}
+              className="p-2 rounded relative group"
+              disabled={!isConnected}
+              style={{ 
+                imageRendering: "pixelated",
+                boxShadow: "0 0 10px rgba(129, 140, 248, 0.5)",
+                opacity: isConnected ? 1 : 0.5,
+                cursor: isConnected ? 'pointer' : 'not-allowed'
+              }}
+            >
+              <div className="absolute inset-0 bg-indigo-600 rounded transform -rotate-1 -z-10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded"></div>
+              <div className="absolute inset-2 bg-indigo-600 border-t-2 border-l-2 border-indigo-400 border-b-2 border-r-2 border-indigo-800 rounded-sm"></div>
+              <div className="relative z-10 font-pixel text-white text-base font-bold px-3 py-1.5 flex items-center">
+                <span className="mr-1.5 text-xl">🎮</span>
+                <span>Join a Room</span>
+              </div>
+              <div className="absolute -inset-px bg-white opacity-0 group-hover:opacity-20 rounded transition-opacity"></div>
+              <div className="absolute inset-0 border-2 border-dashed border-indigo-300 opacity-0 group-hover:opacity-40 rounded"></div>
+            </button>
+          </div>
+          
+          {isConnected && (
+            <div className="mt-2 text-green-400 text-xs">
+              <span>✓ Connected to server</span>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Team code display or input modals */}
+      {(isCreatingTeam || isJoiningTeam) && !roomCode && (
+        <div className="absolute top-40 left-0 w-full flex justify-center z-40">
+          <div className="bg-gray-900 bg-opacity-90 p-6 rounded-lg border-2 border-gray-700 shadow-xl max-w-md w-full">
+            {isCreatingTeam && (
+              <div className="flex flex-col items-center">
+                <h3 className="text-xl font-pixel text-white mb-2">Your Room Code</h3>
+                <p className="text-sm text-gray-300 mb-4">Share this code with friends to play together</p>
+                
+                {!roomCode ? (
+                  <div className="flex flex-col items-center justify-center mb-6">
+                    <div className="w-16 h-16 border-4 border-t-4 border-yellow-500 rounded-full animate-spin mb-4"></div>
+                    <p className="text-white text-sm">Generating room code...</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center mb-6">
+                    {roomCode.split('').map((char, idx) => (
+                      <div 
+                        key={idx} 
+                        className="w-12 h-16 bg-gradient-to-b from-yellow-600 to-yellow-800 flex items-center justify-center mx-1 rounded-md border-2 border-yellow-500 shadow-inner"
+                      >
+                        <span className="text-2xl font-pixel text-white" style={{ textShadow: "0 0 5px rgba(255, 215, 0, 0.5)" }}>
+                          {char}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <button 
+                  onClick={closeTeamModals}
+                  className="bg-green-600 hover:bg-green-700 text-white font-pixel px-6 py-2 rounded"
+                  disabled={!roomCode}
+                >
+                  {roomCode ? 'Ready!' : 'Please wait...'}
+                </button>
+              </div>
+            )}
+            
+            {isJoiningTeam && (
+              <div className="flex flex-col items-center">
+                <h3 className="text-xl font-pixel text-white mb-2">Enter Room Code</h3>
+                <p className="text-sm text-gray-300 mb-4">Type the 5-character code to join</p>
+                <form onSubmit={handleJoinTeamSubmit} className="w-full">
+                  <div className="flex items-center justify-center mb-6">
+                    {Array.from({ length: 5 }).map((_, idx) => (
+                      <input
+                        key={idx}
+                        type="text"
+                        maxLength={1}
+                        className="w-12 h-16 bg-gray-800 border-2 border-indigo-500 rounded-md text-center mx-1 text-2xl font-pixel text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 uppercase"
+                        value={joinTeamInput[idx] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          if (/^[A-Z0-9]$/.test(val) || val === '') {
+                            const newInput = joinTeamInput.substring(0, idx) + val + joinTeamInput.substring(idx + 1);
+                            setJoinTeamInput(newInput);
+                            
+                            // Auto-focus next input if value entered
+                            if (val && idx < 4) {
+                              const nextInput = e.target.parentElement?.nextElementSibling?.querySelector('input');
+                              if (nextInput) nextInput.focus();
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Backspace' && !joinTeamInput[idx] && idx > 0) {
+                            const prevInput = e.currentTarget.parentElement?.previousElementSibling?.querySelector('input');
+                            if (prevInput) prevInput.focus();
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex justify-center">
+                    <button 
+                      type="button"
+                      onClick={closeTeamModals}
+                      className="bg-gray-600 hover:bg-gray-700 text-white font-pixel px-4 py-2 rounded mr-3"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={joinTeamInput.length !== 5}
+                      className={`${
+                        joinTeamInput.length === 5 
+                          ? 'bg-blue-600 hover:bg-blue-700' 
+                          : 'bg-blue-900 cursor-not-allowed'
+                      } text-white font-pixel px-6 py-2 rounded`}
+                    >
+                      Join
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-red-900 bg-opacity-70 p-3 mt-4 rounded-md">
+                <p className="text-red-200 text-sm">{error}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* Full-screen game area */}
       <div 
@@ -400,31 +695,6 @@ export default function Arena() {
             />
           );
         })}
-
-        {/* Night market neon sign effect at the top */}
-        <div className="absolute top-16 left-0 w-full h-16 bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-900 overflow-hidden z-10">
-          <div className="absolute inset-0 opacity-10">
-            {Array.from({ length: 20 }).map((_, idx) => (
-              <div 
-                key={`light-${idx}`} 
-                className="absolute bg-white rounded-full animate-pulse" 
-                style={{
-                  width: '4px',
-                  height: '4px',
-                  top: `${Math.random() * 16}px`,
-                  left: `${Math.random() * viewportSize.width}px`,
-                  animationDelay: `${Math.random() * 2}s`
-                }}
-              />
-            ))}
-          </div>
-          <div className="h-full flex items-center justify-center space-x-4 text-white font-bold overflow-hidden">
-            <span className="text-red-500 text-lg animate-pulse font-pixel" style={{ textShadow: "0 0 5px #ff0000, 0 0 10px #ff0000" }}>臺北</span>
-            <span className="text-yellow-300 text-lg font-pixel" style={{ textShadow: "0 0 5px #FFD700, 0 0 10px #FFD700" }}>夜市</span>
-            <span className="text-blue-300 text-lg animate-pulse font-pixel" style={{ textShadow: "0 0 5px #87CEEB, 0 0 10px #87CEEB" }}>NIGHT</span>
-            <span className="text-green-300 text-lg font-pixel" style={{ textShadow: "0 0 5px #00FF00, 0 0 10px #00FF00" }}>MARKET</span>
-          </div>
-        </div>
 
         {/* Taiwanese lanterns - with enhanced pixel-art styling */}
         {lanterns.map((lantern, idx) => (
@@ -855,6 +1125,64 @@ export default function Arena() {
             </div>
           </div>
         )}
+
+        {/* Other players */}
+        {roomCode && Object.values(players).map((player: PlayerData) => {
+          // Skip rendering the current player (already rendered above)
+          if (socket && player.id === socket.id) return null;
+          
+          return (
+            <div
+              key={player.id}
+              className="absolute z-30"
+              style={{
+                left: `${player.position.x}px`,
+                top: `${player.position.y}px`,
+                width: `${characterSize.width}px`,
+                height: `${characterSize.height}px`,
+                imageRendering: "pixelated"
+              }}
+            >
+              {/* Character sprite (simple pixel art style for other players) */}
+              <div className="w-full h-full relative">
+                {/* Head */}
+                <div className="absolute top-0 left-1/4 w-1/2 h-1/3 bg-[#D5C7B5] rounded-t-sm"></div>
+                
+                {/* Body - different color to distinguish other players */}
+                <div className="absolute top-1/3 left-1/6 w-2/3 h-1/3 bg-green-600"></div>
+                
+                {/* Legs */}
+                <div className="absolute bottom-0 left-1/4 w-1/5 h-1/3 bg-blue-800"></div>
+                <div className="absolute bottom-0 right-1/4 w-1/5 h-1/3 bg-blue-800"></div>
+                
+                {/* Arms */}
+                <div className="absolute top-1/3 left-0 w-1/6 h-1/4 bg-green-600"></div>
+                <div className="absolute top-1/3 right-0 w-1/6 h-1/4 bg-green-600"></div>
+                
+                {/* Face details */}
+                <div className="absolute top-[15%] left-[35%] w-[10%] h-[5%] bg-black"></div>
+                <div className="absolute top-[15%] right-[35%] w-[10%] h-[5%] bg-black"></div>
+                <div className="absolute top-[22%] left-[40%] w-[20%] h-[5%] bg-black"></div>
+              </div>
+
+              {/* Username above character */}
+              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                <div className="bg-gray-900 bg-opacity-70 text-white px-2 py-0.5 text-xs rounded-full font-pixel">
+                  {player.username}
+                </div>
+              </div>
+              
+              {/* Emote bubble (if active) */}
+              {player.emote && (
+                <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 animate-bounce">
+                  <div className="bg-white rounded-full w-8 h-8 flex items-center justify-center text-lg shadow-lg">
+                    {player.emote}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Controls overlay (bottom of screen, Gather.town style) */}
@@ -924,6 +1252,11 @@ export default function Arena() {
         @keyframes float-slow {
           0%, 100% { transform: translateY(0); opacity: 0.6; }
           50% { transform: translateY(-8px); opacity: 0.9; }
+        }
+
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.8; }
         }
 
         @keyframes shooting-star {
