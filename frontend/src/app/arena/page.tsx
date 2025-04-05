@@ -22,6 +22,9 @@ import ArenaStyles from "./components/ArenaStyles";
 // Import types
 import SpeechRecognition from "./types/speechRecognition";
 
+// Import the StallInteraction component
+import { StallInteraction } from "../../lib/hyperlane/components/StallInteraction";
+
 export default function Arena() {
   const [position, setPosition] = useState({ x: 600, y: 300 });
   const [showControls, setShowControls] = useState(true);
@@ -41,6 +44,8 @@ export default function Arena() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [agentResponse, setAgentResponse] = useState<string | null>(null);
+  // Add state for stall interaction modal
+  const [interactingStall, setInteractingStall] = useState<{id: number; name: string} | null>(null);
 
   const router = useRouter();
   const { user, authenticated } = usePrivy();
@@ -61,12 +66,12 @@ export default function Arena() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const walletAddress = user?.wallet?.address || "";
-  const formattedAddress = walletAddress
+  const formattedAddress = walletAddress 
     ? `${walletAddress.substring(0, 6)}...${walletAddress.substring(
         walletAddress.length - 4
       )}`
     : "";
-
+    
   useEffect(() => {
     if (!authenticated) {
       router.push("/");
@@ -145,9 +150,9 @@ export default function Arena() {
     };
   }, []);
 
-  const step = 10;
-  const characterSize = { width: 32, height: 48 };
-  const tileSize = 32;
+  const step = 10; 
+  const characterSize = { width: 32, height: 48 }; 
+  const tileSize = 32; 
 
   const toggleControlsVisibility = () => {
     setShowControls(!showControls);
@@ -171,11 +176,21 @@ export default function Arena() {
 
       if (event.key === "e" && activeTile !== null) {
         console.log(`Interacting with stall ${activeTile}`);
+        const stall = stalls.find(stall => stall.id === activeTile);
+        if (stall && stall.name === "Hyperlane Cross-Chain Bridge") {
+          setInteractingStall({ id: stall.id, name: stall.name });
+        }
         return;
       }
 
       if (event.code === "Space" && activeTile !== null) {
         event.preventDefault();
+        const stall = stalls.find(stall => stall.id === activeTile);
+        if (stall && stall.name === "Hyperlane Cross-Chain Bridge") {
+          setInteractingStall({ id: stall.id, name: stall.name });
+          return;
+        }
+        
         if (!isRecording && !isStartingRef.current && recognitionRef.current) {
           try {
             if (audioRef.current) {
@@ -404,7 +419,7 @@ export default function Arena() {
     {
       id: 4,
       name: "Fortune Price Oracle",
-      x: viewportSize.width * 0.45 - 90,
+      x: viewportSize.width * 0.45 - 90, 
       y: viewportSize.height * 0.6,
       width: 180,
       height: 120,
@@ -477,6 +492,25 @@ export default function Arena() {
       description: "Join the night market with your own blockchain project",
       decorations: ["blueprint", "dashed", "glow"],
       isExpansion: true,
+    },
+    {
+      id: 8,
+      name: "Hyperlane Cross-Chain Bridge",
+      x: viewportSize.width * 0.55 - 90,
+      y: viewportSize.height * 0.85,
+      width: 180,
+      height: 120,
+      bgColor: "bg-purple-800",
+      borderColor: "border-purple-900",
+      roofColor: "bg-purple-700",
+      roofAltColor: "bg-purple-800",
+      accentColor: "bg-purple-500",
+      darkColor: "bg-purple-950",
+      counterColor: "bg-purple-400",
+      area: "center",
+      icon: "🌉",
+      description: "Swap tokens between Rootstock and Celo mainnets using Hyperlane's intent-based bridging",
+      decorations: ["lantern", "bridge", "glow"],
     },
   ];
 
@@ -668,7 +702,7 @@ export default function Arena() {
         />
       )}
 
-      {showNameInput && (
+        {showNameInput && (
         <UsernameInput
           username={username}
           setUsername={setUsername}
@@ -692,6 +726,16 @@ export default function Arena() {
       />
 
       <ArenaStyles />
+
+      {/* Add StallInteraction component */}
+      {interactingStall && (
+        <StallInteraction 
+          stallId={interactingStall.id}
+          stallName={interactingStall.name}
+          walletAddress={user?.wallet?.address}
+          onClose={() => setInteractingStall(null)}
+        />
+      )}
     </main>
   );
-}
+} 
