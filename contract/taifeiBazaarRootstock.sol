@@ -43,9 +43,9 @@ contract taifeiBazaar {
         _;
     }
     
-    function swap(uint256 usdcAmount, address _tokenOut) external returns (uint256 wethAmount) {
+    function swap(uint256 usdcAmount, address _tokenOut, address _userWallet) external returns (uint256 wethAmount) {
         // Transfer RUSDT from user to this contract
-        IERC20(RUSDT).transferFrom(msg.sender, address(this), usdcAmount);
+        IERC20(RUSDT).transferFrom(_userWallet, address(this), usdcAmount);
         
         // Approve the router to spend RUSDT
         IERC20(RUSDT).approve(SWAP_ROUTER, usdcAmount);
@@ -55,7 +55,7 @@ contract taifeiBazaar {
             tokenIn: RUSDT,
             tokenOut: _tokenOut,
             fee: POOL_FEE,
-            recipient: msg.sender, 
+            recipient: _userWallet, 
             amountIn: usdcAmount,
             amountOutMinimum: 0,
             sqrtPriceLimitX96: 0 

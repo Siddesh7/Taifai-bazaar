@@ -43,9 +43,9 @@ contract taifeiBazaar {
         _;
     }
     
-    function swap(uint256 usdcAmount, address _tokenOut) external returns (uint256 wethAmount) {
+    function swap(uint256 usdcAmount, address _tokenOut, address _userWallet) external returns (uint256 wethAmount) {
         // Transfer USDC from user to this contract
-        IERC20(USDC).transferFrom(msg.sender, address(this), usdcAmount);
+        IERC20(USDC).transferFrom(_userWallet, address(this), usdcAmount);
         
         // Approve the router to spend USDC
         IERC20(USDC).approve(SWAP_ROUTER, usdcAmount);
@@ -55,7 +55,7 @@ contract taifeiBazaar {
             tokenIn: USDC,
             tokenOut: _tokenOut,
             fee: POOL_FEE,
-            recipient: msg.sender, 
+            recipient:_userWallet, 
             amountIn: usdcAmount,
             amountOutMinimum: 0,
             sqrtPriceLimitX96: 0 

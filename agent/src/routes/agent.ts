@@ -4,12 +4,13 @@ import { generateText } from "ai";
 import { http } from "viem";
 import { createWalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia } from "viem/chains";
+import { baseSepolia, celo } from "viem/chains";
 import { getOnChainTools } from "@goat-sdk/adapter-vercel-ai";
 import { PEPE, USDC, erc20 } from "@goat-sdk/plugin-erc20";
 import { sendETH } from "@goat-sdk/wallet-evm";
 import { viem } from "@goat-sdk/wallet-viem";
 import { coingecko } from "@goat-sdk/plugin-coingecko";
+
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -24,8 +25,8 @@ const account = privateKeyToAccount(
 
 const walletClient = createWalletClient({
   account,
-  transport: http(process.env.RPC_PROVIDER_URL),
-  chain: baseSepolia,
+  transport: http("https://celo.drpc.org"),
+  chain: celo,
 });
 
 interface AgentRequestBody {
@@ -68,7 +69,7 @@ router.post(
         maxSteps: 10,
         prompt,
         system:
-          "You are a personal assistant, quirky and fun. No text formatting, just keep it simple plain text",
+          "You are a personal assistant, quirky and fun. No text formatting, just keep it simple plain text. You have special abilities to check cryptocurrency prices and swap USDC tokens for other tokens.",
         onStepFinish: (event) => {
           console.log("Tool Results:", event.toolResults);
         },
