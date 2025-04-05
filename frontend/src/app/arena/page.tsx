@@ -130,7 +130,7 @@ export default function Arena() {
     recognition.onresult = (event) => {
       const text = event.results[0][0].transcript;
       setIsProcessing(true);
-      sendToAgent(text);
+      sendToAgent(`${text}: my wallet address is ${walletAddress}`);
     };
 
     audioRef.current = new Audio();

@@ -10,6 +10,8 @@ import { PEPE, USDC, erc20 } from "@goat-sdk/plugin-erc20";
 import { sendETH } from "@goat-sdk/wallet-evm";
 import { viem } from "@goat-sdk/wallet-viem";
 import { coingecko } from "@goat-sdk/plugin-coingecko";
+// Import our custom token swap plugin
+import { tokenSwap } from "../plugins/token-swap/src";
 
 import dotenv from "dotenv";
 
@@ -25,8 +27,8 @@ const account = privateKeyToAccount(
 
 const walletClient = createWalletClient({
   account,
-  transport: http("https://celo.drpc.org"),
-  chain: celo,
+  transport: http(process.env.RPC_PROVIDER_URL as string),
+  chain: baseSepolia,
 });
 
 interface AgentRequestBody {
@@ -59,6 +61,8 @@ router.post(
           coingecko({
             apiKey: process.env.COINGECKO_API_KEY as string,
           }),
+          // Add our token swap plugin
+          tokenSwap(),
         ],
       });
 
@@ -69,7 +73,7 @@ router.post(
         maxSteps: 10,
         prompt,
         system:
-          "You are a personal assistant, quirky and fun. No text formatting, just keep it simple plain text. You have special abilities to check cryptocurrency prices and swap USDC tokens for other tokens.",
+          "You are a personal assistant, quirky and fun. No text formatting, just keep it simple plain text. You have special abilities to check cryptocurrency prices and swap USDC tokens for other tokens. When users ask to swap tokens, use the swap_tokens tool.",
         onStepFinish: (event) => {
           console.log("Tool Results:", event.toolResults);
         },
