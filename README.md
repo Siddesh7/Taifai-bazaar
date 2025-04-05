@@ -1,7 +1,9 @@
-# Taifai-bazaar
 # Taifei Bazaar - ETHGlobal Taipei 2025
 
 Taifei Bazaar transports users to an interactive, 2D multiplayer virtual night market inspired by the vibrant energy of Taipei. This project aims to create a fun, gamified social space where users can explore, interact with each other in real-time, and engage seamlessly with decentralized applications and blockchain functionalities integrated directly into the environment. It bridges the gap between gaming, social platforms, and the decentralized web, offering a novel way to experience DeFi and cross-chain operations.
+
+<img width="1428" alt="Screenshot 2025-04-06 at 6 05 44 AM" src="https://github.com/user-attachments/assets/44a412d9-4d64-4485-9f06-1f2f9a9ffce6" />
+<img width="1438" alt="Screenshot 2025-04-06 at 6 06 17 AM" src="https://github.com/user-attachments/assets/3827b39f-ebe2-4a0a-8ab4-91e4a0ab3575" />
 
 ## Features
 
