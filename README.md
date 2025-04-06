@@ -33,8 +33,8 @@ Taifei Bazaar transports users to an interactive, 2D multiplayer virtual night m
 
 ## Deployed contracts
 
-- Celo Mainnet - 
-- Rootstock Mainnet - 
+- Celo Mainnet - https://celoscan.io/address/0x0c14591696e97c8824852143d430A786Fb3992Db#code
+- Rootstock Mainnet - https://rootstock.blockscout.com/address/0xf9816f5cD44092f6D57B167b559FA237069fe0FF
 
 ## The Team
 
@@ -44,4 +44,3 @@ Taifei Bazaar transports users to an interactive, 2D multiplayer virtual night m
 ## Demo & Video
 
 *   **Live Demo:** https://taifei-bazaar.vercel.app/
-*   **Video Walkthrough:** [Link to Video - *Add URL here*]
