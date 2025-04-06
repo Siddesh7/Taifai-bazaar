@@ -272,9 +272,25 @@ export default function Arena() {
 
   const sendToAgent = async (prompt: string) => {
     try {
+      // Check if the prompt includes Rootstock-related keywords (case insensitive)
+      const lowercasedPrompt = prompt.toLowerCase();
+      const isRootstock =
+        lowercasedPrompt.includes("rootstock") ||
+        lowercasedPrompt.includes("rbtc") ||
+        lowercasedPrompt.includes("rusdt") ||
+        lowercasedPrompt.includes("doc") ||
+        lowercasedPrompt.includes("rif") ||
+        lowercasedPrompt.includes("sov") ||
+        lowercasedPrompt.includes("bpro");
+
+      console.log(`Detected Rootstock: ${isRootstock}`);
+
       const response = await axios.post(
         "http://localhost:3000/api/agent/message",
-        { prompt },
+        {
+          prompt,
+          isRootstock, // Pass isRootstock flag to the agent API
+        },
         { headers: { "Cache-Control": "no-cache" } }
       );
       const agentText = response.data.response;

@@ -33,6 +33,7 @@ const walletClient = createWalletClient({
 
 interface AgentRequestBody {
   prompt: string;
+  isRootstock?: boolean;
 }
 
 // Agent route
@@ -42,7 +43,7 @@ router.post(
     req: Request<{}, any, AgentRequestBody>,
     res: Response
   ): Promise<void> => {
-    const { prompt } = req.body;
+    const { prompt, isRootstock = false } = req.body;
 
     if (!prompt || typeof prompt !== "string") {
       res
@@ -66,14 +67,32 @@ router.post(
         ],
       });
 
+      // Add information about which chain to use based on the isRootstock flag
+      let systemMessage =
+        "You are a personal assistant, quirky and fun. No text formatting, just keep it simple plain text. You have special abilities to check cryptocurrency prices and swap tokens.";
+
+      if (isRootstock) {
+        systemMessage +=
+          " The user is asking about the Rootstock blockchain. When using the swap_tokens tool, you MUST set isRootstock: true in your function parameters. Available tokens on Rootstock are: RBTC (native token), DOC (Dollar on Chain), RIF (RSK Infrastructure Framework), SOV (Sovryn), BPRO (BitPRO), and RUSDT (Rootstock USDT). If the user asks to swap any of these tokens, you must use the swap_tokens tool with isRootstock set to true.";
+      } else {
+        systemMessage +=
+          " The available tokens on Celo are: CELO (native token), cUSD (Celo Dollar), cEUR (Celo Euro), USDC, DAI, and USDT.";
+      }
+
+      // Add a note about Rootstock to the prompt if isRootstock is true
+      let enhancedPrompt = prompt;
+      if (isRootstock && !prompt.toLowerCase().includes("isrootstock")) {
+        enhancedPrompt +=
+          " When using swap_tokens, you MUST set isRootstock: true. The available Rootstock tokens are: RBTC, DOC, RIF, SOV, BPRO, RUSDT.";
+      }
+
       // Generate response from the agent
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         tools,
         maxSteps: 10,
-        prompt,
-        system:
-          "You are a personal assistant, quirky and fun. No text formatting, just keep it simple plain text. You have special abilities to check cryptocurrency prices and swap USDC tokens for other tokens. When users ask to swap tokens, use the swap_tokens tool.",
+        prompt: enhancedPrompt,
+        system: systemMessage,
         onStepFinish: (event) => {
           console.log("Tool Results:", event.toolResults);
         },

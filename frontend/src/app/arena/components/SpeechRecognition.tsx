@@ -18,25 +18,34 @@ const SpeechRecognitionUi: React.FC<SpeechRecognitionUiProps> = ({
   agentResponse,
 }) => {
   const [visibleResponse, setVisibleResponse] = useState<string | null>(null);
+  const [hasMoved, setHasMoved] = useState(false);
   const [lastPosition, setLastPosition] = useState(position);
 
-  // Set the response when it arrives
+  // Set the response when it arrives, but only if user hasn't moved yet
   useEffect(() => {
-    if (agentResponse) {
+    if (agentResponse && !hasMoved) {
       setVisibleResponse(agentResponse);
       setLastPosition(position);
     }
-  }, [agentResponse, position]);
+  }, [agentResponse, position, hasMoved]);
 
-  // Clear the response when position changes
+  // When position changes, mark that user has moved and clear the response
   useEffect(() => {
     if (
       visibleResponse &&
       (lastPosition.x !== position.x || lastPosition.y !== position.y)
     ) {
       setVisibleResponse(null);
+      setHasMoved(true);
     }
   }, [position, lastPosition, visibleResponse]);
+
+  // Reset the hasMoved flag when a new agent response arrives
+  useEffect(() => {
+    if (agentResponse) {
+      setHasMoved(false);
+    }
+  }, [agentResponse]);
 
   return (
     <>
@@ -81,7 +90,8 @@ const SpeechRecognitionUi: React.FC<SpeechRecognitionUiProps> = ({
       {visibleResponse &&
         activeTile !== null &&
         !isRecording &&
-        !isProcessing && (
+        !isProcessing &&
+        !hasMoved && (
           <div
             className="absolute z-50"
             style={{

@@ -8,7 +8,8 @@ import { z } from "zod";
 import { CELO_TOKENS, getTokenAddress, getTokenName } from "./celo-tokens";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { baseSepolia, celo } from "viem/chains";
+import { rootstock, celo } from "viem/chains";
+
 export class TokenSwapPlugin extends PluginBase<WalletClientBase> {
   constructor() {
     super("tokenSwap", []);
@@ -27,89 +28,164 @@ export class TokenSwapPlugin extends PluginBase<WalletClientBase> {
           parameters: z.object({
             fromToken: z.string().describe("The token to swap from"),
             amount: z.string().describe("The amount to swap"),
-            toToken: z
-              .string()
-              .optional()
-              .describe("The token to swap to (optional)"),
+            toToken: z.string().optional().describe("The token to swap to "),
             walletAddress: z
               .string()
               .describe("The wallet address to use for the swap"),
+            isRootstock: z
+              .boolean()
+              .optional()
+              .describe("Whether to use Rootstock chain for the swap"),
           }),
         },
         async (parameters) => {
-          const fromToken = parameters.fromToken;
-          const toToken = parameters.toToken || "CELO";
+          try {
+            console.warn(parameters);
+            const fromToken = parameters.fromToken;
+            const toToken = parameters.toToken;
+            let isRootstock = parameters.isRootstock || false;
 
-          // Look up token addresses
-          const fromTokenAddress = getTokenAddress(fromToken);
-          const toTokenAddress = getTokenAddress(toToken);
-          const account = privateKeyToAccount(
-            "0x807764482387d33a68919e64bcc4f75f29e7a7aa3af8fb496af1d08e77ca420f"
-          );
+            if (!toToken) {
+              throw new Error("toToken is required");
+            }
 
-          console.log("Account:", account);
+            // Explicitly check for Rootstock tokens to ensure isRootstock is set properly
+            if (
+              !isRootstock &&
+              (fromToken.toUpperCase() === "RBTC" ||
+                fromToken.toUpperCase() === "DOC" ||
+                fromToken.toUpperCase() === "RIF" ||
+                fromToken.toUpperCase() === "SOV" ||
+                fromToken.toUpperCase() === "BPRO" ||
+                fromToken.toUpperCase() === "RUSDT" ||
+                toToken?.toUpperCase() === "RBTC" ||
+                toToken?.toUpperCase() === "DOC" ||
+                toToken?.toUpperCase() === "RIF" ||
+                toToken?.toUpperCase() === "SOV" ||
+                toToken?.toUpperCase() === "BPRO" ||
+                toToken?.toUpperCase() === "RUSDT")
+            ) {
+              console.log(
+                "Rootstock tokens detected. Setting isRootstock to true."
+              );
+              isRootstock = true;
+            }
 
-          const walletClient = createWalletClient({
-            account,
-            transport: http("https://celo.drpc.org"),
-            chain: celo,
-          });
+            // Look up token addresses
+            const fromTokenAddress = getTokenAddress(fromToken, isRootstock);
+            const toTokenAddress = getTokenAddress(toToken, isRootstock);
 
-          const amountInWei = Math.floor(
-            parseFloat(parameters.amount) * 10 ** 6
-          ).toString();
+            if (!fromTokenAddress) {
+              throw new Error(`Unknown token: ${fromToken}`);
+            }
 
-          const hash = await walletClient.writeContract({
-            address: "0x0c14591696e97c8824852143d430A786Fb3992Db",
-            abi: [
-              {
-                inputs: [
-                  {
-                    internalType: "uint256",
-                    name: "usdcAmount",
-                    type: "uint256",
-                  },
-                  {
-                    internalType: "address",
-                    name: "_tokenOut",
-                    type: "address",
-                  },
-                  {
-                    internalType: "address",
-                    name: "_userWallet",
-                    type: "address",
-                  },
-                ],
-                name: "swap",
-                outputs: [
-                  {
-                    internalType: "uint256",
-                    name: "wethAmount",
-                    type: "uint256",
-                  },
-                ],
-                stateMutability: "nonpayable",
-                type: "function",
-              },
-            ],
-            functionName: "swap",
-            args: [
+            if (!toTokenAddress) {
+              throw new Error(`Unknown token: ${toToken}`);
+            }
+
+            const account = privateKeyToAccount("");
+
+            console.log("Account:", account);
+
+            // Set the chain and contract address based on whether it's Rootstock or not
+            const chain = isRootstock ? rootstock : celo;
+            const contractAddress = isRootstock
+              ? "0xF9816F5CD44092F6d57b167b559fA237069Fe0FF"
+              : "0x0c14591696e97c8824852143d430A786Fb3992Db";
+
+            // Set the RPC URL based on the chain
+            const rpcUrl = isRootstock
+              ? "https://mycrypto.rsk.co"
+              : "https://celo.drpc.org";
+
+            const walletClient = createWalletClient({
+              account,
+              transport: http(rpcUrl),
+              chain,
+            });
+
+            // Convert the amount to Wei - making sure to handle decimal amounts correctly
+            // For USDC, we use 6 decimals as per token standard
+            const amountFloat = parseFloat(parameters.amount);
+            if (isNaN(amountFloat) || amountFloat <= 0) {
+              throw new Error("Invalid amount. Must be a positive number.");
+            }
+
+            // For small amounts, need to ensure we're not rounding down to zero
+            // Minimum amount should be at least 1 (one unit in the smallest denomination)
+            const amountInWei = Math.max(1, Math.floor(amountFloat * 10 ** 6));
+
+            console.log([
               BigInt(amountInWei),
               toTokenAddress as `0x${string}`,
               parameters.walletAddress as `0x${string}`,
-            ],
-          });
-          console.log("Transaction hash:", hash);
+            ]);
 
-          return {
-            tokenName: fromToken,
-            tokenAddress: fromTokenAddress || "Unknown token",
-            amount: parameters.amount,
-            walletAddress: parameters.walletAddress,
-            toToken: toToken,
-            toTokenAddress: toTokenAddress || "Unknown token",
-            transactionHash: hash,
-          };
+            const hash = await walletClient.writeContract({
+              address: contractAddress as `0x${string}`,
+              abi: [
+                {
+                  inputs: [
+                    {
+                      internalType: "uint256",
+                      name: "usdcAmount",
+                      type: "uint256",
+                    },
+                    {
+                      internalType: "address",
+                      name: "_tokenOut",
+                      type: "address",
+                    },
+                    {
+                      internalType: "address",
+                      name: "_userWallet",
+                      type: "address",
+                    },
+                  ],
+                  name: "swap",
+                  outputs: [
+                    {
+                      internalType: "uint256",
+                      name: "wethAmount",
+                      type: "uint256",
+                    },
+                  ],
+                  stateMutability: "nonpayable",
+                  type: "function",
+                },
+              ],
+              functionName: "swap",
+              args: [
+                BigInt(amountInWei),
+                toTokenAddress as `0x${string}`,
+                parameters.walletAddress as `0x${string}`,
+              ],
+            });
+            console.log("Transaction hash:", hash);
+
+            return {
+              tokenName: fromToken,
+              tokenAddress: fromTokenAddress,
+              amount: parameters.amount,
+              walletAddress: parameters.walletAddress,
+              toToken: toToken,
+              toTokenAddress: toTokenAddress,
+              transactionHash: hash,
+              chain: isRootstock ? "Rootstock" : "Celo",
+            };
+          } catch (error) {
+            console.error("Error in swap_tokens:", error);
+
+            // Return a user-friendly error with details
+            return {
+              success: false,
+              error: `Failed to swap tokens: ${
+                (error as Error).message || "Unknown error"
+              }`,
+              details:
+                "The token swap transaction could not be completed. Please try again with a larger amount or different token pair.",
+            };
+          }
         }
       ),
       createTool(
