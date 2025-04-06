@@ -36,6 +36,8 @@ Taifei Bazaar transports users to an interactive, 2D multiplayer virtual night m
 - Celo Mainnet - https://celoscan.io/address/0x0c14591696e97c8824852143d430A786Fb3992Db#code
 - Rootstock Mainnet - https://rootstock.blockscout.com/address/0xf9816f5cD44092f6D57B167b559FA237069fe0FF
 
+- Yield Earner - Rootstock Mainnet - https://rootstock.blockscout.com/address/0x659f31Ef1CE86179197CC2659eb20684434444BD?tab=index
+
 ## The Team
 
 - [Siddesh Sankhya](https://x.com/0xSiddesh)
